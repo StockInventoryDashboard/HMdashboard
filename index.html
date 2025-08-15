@@ -111,17 +111,27 @@
         .danger-btn { background-color: var(--orange); }
         .danger-btn:hover { background-color: #e06c0d; }
 
+        /* --- P&L VIEW --- */
+        #pl-view .widget-grid {
+            background: linear-gradient(135deg, #f3f2ff, #e8eaff);
+            padding: 25px;
+            border-radius: var(--border-radius);
+        }
+
         /* --- ROOMS VIEW --- */
         .room-category { margin-bottom: 40px; }
         .room-category h2 { margin-bottom: 15px; font-size: 24px; padding-bottom: 10px; border-bottom: 2px solid var(--light-gray);}
-        .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; }
-        .room-card { border: 1px solid transparent; border-radius: var(--border-radius); padding: 15px; text-align: center; cursor: pointer; transition: all 0.3s ease; font-weight: 700; background: #fff; box-shadow: var(--box-shadow); }
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .room-card { border: 1px solid transparent; border-radius: var(--border-radius); padding: 10px; text-align: center; transition: all 0.3s ease; font-weight: 700; background: #fff; box-shadow: var(--box-shadow); display: flex; flex-direction: column; justify-content: space-between; }
+        .room-details { cursor: pointer; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; padding: 5px 0; }
+        .room-card.available .room-details:hover { transform: scale(1.05); }
         .room-card.available { border-left: 5px solid var(--green); }
-        .room-card.available:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(40, 167, 69, 0.4); }
         .room-card.booked { border-left: 5px solid var(--red); background-color: #fdf2f2; }
         .room-card.booked .room-name { color: var(--red); }
         .room-card .room-name { font-size: 20px; margin-bottom: 5px; color: var(--green); }
         .room-card .room-price { font-size: 14px; font-weight: 400; color: var(--gray); }
+        .room-actions { display: flex; justify-content: space-around; padding-top: 10px; border-top: 1px solid var(--light-gray); margin-top: 10px; }
+        .room-actions .action-btn { padding: 4px 8px; font-size: 12px; }
         
         /* --- TABLES & CONTROLS --- */
         .data-table-container { background: #fff; padding: 25px; border-radius: var(--border-radius); box-shadow: var(--box-shadow); overflow-x: auto; margin-bottom: 30px; }
@@ -186,13 +196,13 @@
             <!-- SIDEBAR -->
             <nav class="sidebar">
                 <div class="sidebar-header">
-                    <h2>Hotel Manager Dashboard</h2>
+                    <h2>Hotel Manager</h2>
                 </div>
                 <div class="sidebar-nav">
                     <ul id="sidebar-nav"></ul>
                 </div>
                 <div class="sidebar-footer">
-                    &copy; 2025 Hotel Manger Dashboard. All Rights Reserved.
+                    &copy; 2025 Hotel Manager. All Rights Reserved.
                 </div>
             </nav>
 
@@ -234,7 +244,7 @@
     <div id="staff-modal" class="modal hidden"></div>
     <div id="asset-modal" class="modal hidden"></div>
     <div id="change-password-modal" class="modal hidden"></div>
-    <div id="edit-room-prices-modal" class="modal hidden"></div>
+    <div id="room-modal" class="modal hidden"></div>
 
 
     <script>
@@ -253,10 +263,14 @@
 
             const getDefaultState = () => ({
                 currentUser: null,
-                users: [
-                    { id: 1, username: 'admin', password: 'admin123', name: 'Admin User', role: 'Admin', department: 'Administration', salary: 20 },
-                    { id: 2, username: 'frontdesk', password: 'desk123', name: 'Ada Okoro', role: 'Front Desk', department: 'Front Desk', salary: 50 },
-                    { id: 3, username: 'manager', password: 'manager123', name: 'John Doe', role: 'Manager', department: 'Administration', salary: 10 },
+                staff: [
+                    // Staff with login access
+                    { id: 1, username: 'admin', password: 'admin123', name: 'Admin User', role: 'Admin', department: 'Administration', salary: 500000 },
+                    { id: 2, username: 'frontdesk', password: 'desk123', name: 'Ada Okoro', role: 'Front Desk', department: 'Front Desk', salary: 80000 },
+                    { id: 3, username: 'manager', password: 'manager123', name: 'John Doe', role: 'Manager', department: 'Administration', salary: 250000 },
+                    // Staff without login access
+                    { id: 4, username: '', password: '', name: 'Bello Musa', role: 'Security', department: 'Security', salary: 45000 },
+                    { id: 5, username: '', password: '', name: 'Jane Smith', role: 'Housekeeping', department: 'Housekeeping', salary: 40000 },
                 ],
                 rooms: [],
                 inventory: [
@@ -269,9 +283,9 @@
                     { id: 7, name: 'Guest Water Bottle', department: 'Housekeeping', stock: 400, price: 300, cost: 100, lowStockThreshold: 100 },
                 ],
                 assets: [
-                    { id: 1, name: 'Samsung 55" TV', department: 'Rooms', purchaseDate: '2023-01-15', value: 500 },
-                    { id: 2, name: 'Industrial Oven', department: 'Kitchen', purchaseDate: '2022-11-20', value: 500 },
-                    { id: 3, name: 'Reception Desk', department: 'Office', purchaseDate: '2022-10-01', value: 500 },
+                    { id: 1, name: 'Samsung 55" TV', department: 'Rooms', purchaseDate: '2023-01-15', value: 1000 },
+                    { id: 2, name: 'Industrial Oven', department: 'Kitchen', purchaseDate: '2022-11-20', value: 1000 },
+                    { id: 3, name: 'Reception Desk', department: 'Office', purchaseDate: '2022-10-01', value: 1000 },
                 ],
                 sales: [],
                 lastBackup: null
@@ -284,7 +298,7 @@
                     const backupStatus = document.getElementById('backup-status');
                     backupStatus.textContent = "Saving...";
                     state.lastBackup = new Date().toISOString();
-                    localStorage.setItem('Hotel ManagerData', JSON.stringify(state));
+                    localStorage.setItem('HotelManagerData', JSON.stringify(state));
                     setTimeout(() => { backupStatus.textContent = "All changes saved"; }, 500);
                 } catch (error) {
                     console.error("Failed to save state:", error);
@@ -293,7 +307,7 @@
             }
 
             function loadStateFromLocalStorage() {
-                const savedState = localStorage.getItem('Hotel ManagerData');
+                const savedState = localStorage.getItem('HotelManagerData');
                 if (savedState) {
                     state = JSON.parse(savedState);
                 } else {
@@ -319,7 +333,7 @@
             function populateInitialViewHTML() {
                 document.getElementById('admin-dashboard-view').innerHTML = `<div class="view-header"><h1>Admin Dashboard</h1></div> <div class="widget-grid"> <div class="widget"><h3>Rooms Available</h3><p class="value green" id="admin-rooms-available"></p></div><div class="widget"><h3>Rooms Booked</h3><p class="value red" id="admin-rooms-booked"></p></div><div class="widget"><h3>Today's Sales (Total)</h3><p class="value" id="admin-today-sales"></p></div><div class="widget"><h3>Low Stock Alerts</h3><p class="value red" id="admin-low-stock-count"></p></div></div>`;
                 document.getElementById('front-desk-dashboard-view').innerHTML = `<div class="view-header"><h1>Front Desk Dashboard</h1></div> <div class="widget-grid"> <div class="widget"><h3>Rooms Available</h3><p class="value green" id="fd-rooms-available"></p></div><div class="widget"><h3>Rooms Booked</h3><p class="value red" id="fd-rooms-booked"></p></div><div class="widget"><h3>Check-outs Today</h3><p class="value blue" id="fd-expiring-today"></p></div></div>`;
-                document.getElementById('rooms-view').innerHTML = `<div class="view-header"><h1>Room Management</h1><button id="edit-room-prices-btn" class="primary-btn hidden">Edit Room Prices</button></div> <div class="room-category"><h2>Standard Rooms</h2><div id="standard-room-grid" class="room-grid"></div></div> <div class="room-category"><h2>Deluxe Rooms</h2><div id="deluxe-room-grid" class="room-grid"></div></div> <div class="room-category"><h2>Suites</h2><div id="suite-room-grid" class="room-grid"></div></div>`;
+                document.getElementById('rooms-view').innerHTML = `<div class="view-header"><h1>Room Management</h1><button id="add-room-btn" class="primary-btn hidden">Add New Room</button></div> <div class="room-category"><h2>Standard Rooms</h2><div id="standard-room-grid" class="room-grid"></div></div> <div class="room-category"><h2>Deluxe Rooms</h2><div id="deluxe-room-grid" class="room-grid"></div></div> <div class="room-category"><h2>Suites</h2><div id="suite-room-grid" class="room-grid"></div></div>`;
                 document.getElementById('sales-view').innerHTML = `<div class="view-header"><h1>Sales & Receipts</h1></div> <div class="data-table-container"> <div class="table-controls"> <h2>All Transactions</h2> <button id="new-sale-btn" class="primary-btn">Log New Sale</button> </div> <table class="data-table"> <thead><tr><th>ID</th><th>Customer</th><th>Amount (₦)</th><th>Staff</th><th>Date</th><th>Actions</th></tr></thead> <tbody id="sales-table-body"></tbody> </table> </div>`;
                 document.getElementById('inventory-view').innerHTML = `<div class="view-header"><h1>Inventory Management</h1></div> <div class="data-table-container"><div class="table-controls"><h2>All Items</h2><button id="add-inventory-btn" class="primary-btn">Add New Item</button></div><table class="data-table"><thead><tr><th>Item</th><th>Department</th><th>Stock</th><th>Cost Price (₦)</th><th>Sell Price (₦)</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inventory-table-body"></tbody></table></div>`;
                 document.getElementById('staff-view').innerHTML = `<div class="view-header"><h1>Staff Management</h1></div> <div class="data-table-container"><div class="table-controls"><h2>All Staff</h2><button id="add-staff-btn" class="primary-btn">Add New Staff</button></div><table class="data-table"><thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Salary (₦)</th><th>Actions</th></tr></thead><tbody id="staff-table-body"></tbody></table></div>`;
@@ -333,10 +347,10 @@
                 document.getElementById('new-sale-modal').innerHTML = `<div class="modal-content"><div class="modal-header"><h2>Log New Sale</h2><span class="close-btn" data-modal-id="new-sale-modal">&times;</span></div><form id="new-sale-form"><div class="form-group"><label for="sale-customer-name">Customer Name (Optional)</label><input type="text" id="sale-customer-name" placeholder="e.g., John Doe or Walk-in"></div><div class="sale-item-adder"><select id="sale-item-select" required><option value="">-- Select Item --</option></select><input type="number" id="sale-item-quantity" placeholder="Qty" min="1" value="1"><button type="button" id="add-item-to-sale-btn" class="secondary-btn primary-btn">Add</button></div><div id="sale-items-list-container"><table class="data-table"><thead><tr><th>Item</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead><tbody id="sale-items-list"></tbody></table></div><h3>Total: <strong id="sale-total-amount">₦0.00</strong></h3><div class="modal-footer"><button type="submit" class="primary-btn">Log Sale & Print Receipt</button></div></form></div>`;
                 document.getElementById('receipt-modal').innerHTML = `<div class="modal-content"><div class="modal-header"><h2>Print Receipt</h2><span class="close-btn" data-modal-id="receipt-modal">&times;</span></div><div id="receipt-content-wrapper"><div id="receipt-content"></div></div><div class="modal-footer"><button id="print-receipt-btn" class="primary-btn">Print</button></div></div>`;
                 document.getElementById('inventory-modal').innerHTML = `<div class="modal-content" style="max-width: 550px;"><div class="modal-header"><h2 id="inventory-modal-title">Add Item</h2><span class="close-btn" data-modal-id="inventory-modal">&times;</span></div><form id="inventory-form"><input type="hidden" id="inventory-item-id"><div class="form-group"><label for="inventory-item-name">Item Name</label><input type="text" id="inventory-item-name" required></div><div class="form-group"><label for="inventory-department">Department</label><select id="inventory-department" required><option value="Bar">Bar</option><option value="Kitchen">Kitchen</option><option value="Housekeeping">Housekeeping</option><option value="Spa">Spa</option><option value="Maintenance">Maintenance</option></select></div><div class="form-group"><label for="inventory-stock">Current Stock</label><input type="number" id="inventory-stock" required></div><div class="form-group"><label for="inventory-item-cost">Cost Price (₦)</label><input type="number" id="inventory-item-cost" required></div><div class="form-group"><label for="inventory-item-price">Selling Price (₦)</label><input type="number" id="inventory-item-price" required></div><div class="form-group"><label for="inventory-low-stock">Low Stock Threshold</label><input type="number" id="inventory-low-stock" required></div><div class="modal-footer"><button type="submit" class="primary-btn">Save Item</button></div></form></div>`;
-                document.getElementById('staff-modal').innerHTML = `<div class="modal-content" style="max-width: 550px;"><div class="modal-header"><h2 id="staff-modal-title">Add Staff</h2><span class="close-btn" data-modal-id="staff-modal">&times;</span></div><form id="staff-form"><input type="hidden" id="staff-id"><div class="form-group"><label for="staff-name">Full Name</label><input type="text" id="staff-name" required></div><div class="form-group"><label for="staff-username">Username</label><input type="text" id="staff-username" required></div><div class="form-group"><label for="staff-password">Password</label><input type="password" id="staff-password" placeholder="Enter new password or leave blank"></div><div class="form-group"><label for="staff-role">Role</label><select id="staff-role" required><option value="Admin">Admin</option><option value="Manager">Manager</option><option value="Front Desk">Front Desk</option><option value="Cashier">Cashier</option><option value="Waiter">Waiter</option><option value="Housekeeping">Housekeeping</option><option value="Accountant">Accountant</option><option value="Security">Security</option><option value="Maintenance">Maintenance</option></select></div><div class="form-group"><label for="staff-department">Department</label><select id="staff-department" required><option value="Administration">Administration</option><option value="Front Desk">Front Desk</option><option value="Bar">Bar</option><option value="Kitchen">Kitchen</option><option value="Housekeeping">Housekeeping</option><option value="Accounts">Accounts</option><option value="Security">Security</option><option value="Maintenance">Maintenance</option></select></div><div class="form-group"><label for="staff-salary">Salary (Monthly, ₦)</label><input type="number" id="staff-salary" required></div><div class="modal-footer"><button type="submit" class="primary-btn">Save Staff</button></div></form></div>`;
+                document.getElementById('staff-modal').innerHTML = `<div class="modal-content" style="max-width: 550px;"><div class="modal-header"><h2 id="staff-modal-title">Add Staff</h2><span class="close-btn" data-modal-id="staff-modal">&times;</span></div><form id="staff-form"><input type="hidden" id="staff-id"><div class="form-group"><label for="staff-name">Full Name</label><input type="text" id="staff-name" required></div><div class="form-group"><label for="staff-username">Username (for login access)</label><input type="text" id="staff-username" placeholder="Leave blank if no login needed"></div><div class="form-group"><label for="staff-password">Password</label><input type="password" id="staff-password" placeholder="Required if username is set"></div><div class="form-group"><label for="staff-role">Role</label><select id="staff-role" required><option value="Admin">Admin</option><option value="Manager">Manager</option><option value="Front Desk">Front Desk</option><option value="Cashier">Cashier</option><option value="Waiter">Waiter</option><option value="Housekeeping">Housekeeping</option><option value="Accountant">Accountant</option><option value="Security">Security</option><option value="Maintenance">Maintenance</option></select></div><div class="form-group"><label for="staff-department">Department</label><select id="staff-department" required><option value="Administration">Administration</option><option value="Front Desk">Front Desk</option><option value="Bar">Bar</option><option value="Kitchen">Kitchen</option><option value="Housekeeping">Housekeeping</option><option value="Accounts">Accounts</option><option value="Security">Security</option><option value="Maintenance">Maintenance</option></select></div><div class="form-group"><label for="staff-salary">Salary (Monthly, ₦)</label><input type="number" id="staff-salary" required></div><div class="modal-footer"><button type="submit" class="primary-btn">Save Staff</button></div></form></div>`;
                 document.getElementById('asset-modal').innerHTML = `<div class="modal-content" style="max-width: 550px;"><div class="modal-header"><h2 id="asset-modal-title">Add Asset</h2><span class="close-btn" data-modal-id="asset-modal">&times;</span></div><form id="asset-form"><input type="hidden" id="asset-id"><div class="form-group"><label for="asset-name">Asset Name</label><input type="text" id="asset-name" required></div><div class="form-group"><label for="asset-department">Department</label><select id="asset-department" required><option value="Rooms">Rooms</option><option value="Kitchen">Kitchen</option><option value="Bar">Bar</option><option value="Laundry">Laundry</option><option value="Office">Office</option></select></div><div class="form-group"><label for="asset-purchase-date">Purchase Date</label><input type="date" id="asset-purchase-date" required></div><div class="form-group"><label for="asset-value">Purchase Value (₦)</label><input type="number" id="asset-value" required></div><div class="modal-footer"><button type="submit" class="primary-btn">Save Asset</button></div></form></div>`;
                 document.getElementById('change-password-modal').innerHTML = `<div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h2>Change Password</h2><span class="close-btn" data-modal-id="change-password-modal">&times;</span></div><form id="change-password-form"><div class="form-group"><label for="current-password">Current Password</label><input type="password" id="current-password" required></div><div class="form-group"><label for="new-password">New Password</label><input type="password" id="new-password" required></div><div class="form-group"><label for="confirm-new-password">Confirm New Password</label><input type="password" id="confirm-new-password" required></div><div class="modal-footer"><button type="submit" class="primary-btn">Update Password</button></div></form></div>`;
-                document.getElementById('edit-room-prices-modal').innerHTML = `<div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h2>Edit Room Prices</h2><span class="close-btn" data-modal-id="edit-room-prices-modal">&times;</span></div><form id="edit-room-prices-form"><div class="form-group"><label for="price-standard">Standard Room Price (₦)</label><input type="number" id="price-standard" required></div><div class="form-group"><label for="price-deluxe">Deluxe Room Price (₦)</label><input type="number" id="price-deluxe" required></div><div class="form-group"><label for="price-suite">Suite Price (₦)</label><input type="number" id="price-suite" required></div><div class="modal-footer"><button type="submit" class="primary-btn">Save Prices</button></div></form></div>`;
+                document.getElementById('room-modal').innerHTML = `<div class="modal-content" style="max-width: 450px;"><div class="modal-header"><h2 id="room-modal-title">Add New Room</h2><span class="close-btn" data-modal-id="room-modal">&times;</span></div><form id="room-form"><input type="hidden" id="room-id"><div class="form-group"><label for="room-name-input">Room Name</label><input type="text" id="room-name-input" placeholder="e.g., Room 101" required></div><div class="form-group"><label for="room-type-select">Room Type</label><select id="room-type-select" required><option value="Standard">Standard</option><option value="Deluxe">Deluxe</option><option value="Suite">Suite</option></select></div><div class="form-group"><label for="room-price-input">Price per Night (₦)</label><input type="number" id="room-price-input" min="0" value="0" required></div><div class="modal-footer"><button type="submit" class="primary-btn">Save Room</button></div></form></div>`;
             }
 
             function generateRooms() {
@@ -361,7 +375,7 @@
                 document.getElementById('staff-form').addEventListener('submit', handleStaffFormSubmit);
                 document.getElementById('asset-form').addEventListener('submit', handleAssetFormSubmit);
                 document.getElementById('change-password-form').addEventListener('submit', handleChangePasswordSubmit);
-                document.getElementById('edit-room-prices-form').addEventListener('submit', handleEditRoomPricesSubmit);
+                document.getElementById('room-form').addEventListener('submit', handleRoomFormSubmit);
 
                 document.getElementById('check-in-date').addEventListener('change', calculateBookingPrice);
                 document.getElementById('check-out-date').addEventListener('change', calculateBookingPrice);
@@ -371,6 +385,7 @@
                 document.getElementById('add-inventory-btn').addEventListener('click', () => openInventoryModal('add'));
                 document.getElementById('add-staff-btn').addEventListener('click', () => openStaffModal('add'));
                 document.getElementById('add-asset-btn').addEventListener('click', () => openAssetModal('add'));
+                document.getElementById('add-room-btn').addEventListener('click', () => openRoomModal('add'));
                 document.getElementById('report-filter-btn').addEventListener('click', () => {
                     const start = document.getElementById('report-start-date').value;
                     const end = document.getElementById('report-end-date').value;
@@ -378,7 +393,6 @@
                 });
                 document.getElementById('export-csv-btn').addEventListener('click', exportSalesToCSV);
                 document.getElementById('change-password-btn').addEventListener('click', openChangePasswordModal);
-                document.getElementById('edit-room-prices-btn').addEventListener('click', openEditRoomPricesModal);
                 document.getElementById('pl-period-select').addEventListener('change', (e) => renderProfitLossView(e.target.value));
 
                 document.getElementById('end-of-day-btn').addEventListener('click', handleEndOfDay);
@@ -398,17 +412,10 @@
             function runNotificationChecks() {
                 if (!state.currentUser) return;
 
-                // --- 1. Check for Expired / Due-Today Bookings (for Front Desk / Manager / Admin) ---
                 if (['Front Desk', 'Manager', 'Admin'].includes(state.currentUser.role)) {
                     const today = new Date();
-                    today.setHours(23, 59, 59, 999); // Compare against the end of today
-
-                    const expiredOrDueRooms = state.rooms.filter(room => 
-                        room.status === 'booked' && 
-                        new Date(room.checkOut) < today && // Find rooms where checkout date is in the past
-                        !transientState.expiredBookingAlertsShown.has(room.id)
-                    );
-                    
+                    today.setHours(23, 59, 59, 999); 
+                    const expiredOrDueRooms = state.rooms.filter(room => room.status === 'booked' && new Date(room.checkOut) < today && !transientState.expiredBookingAlertsShown.has(room.id));
                     if (expiredOrDueRooms.length > 0) {
                         const roomNames = expiredOrDueRooms.map(r => `${r.name} (${r.guestName})`).join(', ');
                         alert(`NOTIFICATION: The following bookings are due for checkout or have expired:\n\n${roomNames}\n\nPlease process their checkout or run the End of Day process.`);
@@ -416,17 +423,10 @@
                     }
                 }
 
-                // --- 2. Check for Upcoming (Tomorrow) Checkouts ---
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 const tomorrowString = tomorrow.toISOString().split('T')[0];
-                
-                const upcomingRooms = state.rooms.filter(room => 
-                    room.status === 'booked' && 
-                    room.checkOut === tomorrowString &&
-                    !transientState.upcomingCheckoutAlertsShown.has(room.id)
-                );
-
+                const upcomingRooms = state.rooms.filter(room => room.status === 'booked' && room.checkOut === tomorrowString && !transientState.upcomingCheckoutAlertsShown.has(room.id));
                 if (upcomingRooms.length > 0) {
                     const roomNames = upcomingRooms.map(r => `${r.name} (${r.guestName})`).join(', ');
                     alert(`REMINDER: The following guests are due for checkout tomorrow:\n\n${roomNames}`);
@@ -438,13 +438,13 @@
             // BACKUP, RESTORE & SYSTEM FUNCTIONS
             // =================================================================
             function handleEndOfDay() { if (!confirm("Are you sure you want to run the End of Day process? This will check out all due rooms.")) return; const today = new Date(); today.setHours(0, 0, 0, 0); let checkedOutCount = 0; state.rooms.forEach(room => { if (room.status === 'booked' && room.checkOut) { const checkOutDate = new Date(room.checkOut); if (checkOutDate <= today) { room.status = 'available'; room.guestName = null; room.checkIn = null; room.checkOut = null; checkedOutCount++; } } }); alert(`End of Day process complete. ${checkedOutCount} room(s) have been checked out and are now available.`); saveStateAndReRender(); }
-            function handleFactoryReset() { const confirmation = prompt('EXTREME WARNING! This will delete all sales, inventory, and user data permanently. This action cannot be undone. To confirm, type "RESET" in the box below.'); if (confirmation === 'RESET') { localStorage.removeItem('binezHotelData'); alert("System has been reset to factory defaults. The application will now reload."); location.reload(); } else { alert("Factory reset cancelled."); } }
+            function handleFactoryReset() { const confirmation = prompt('EXTREME WARNING! This will delete all sales, inventory, and staff data permanently. This action cannot be undone. To confirm, type "RESET" in the box below.'); if (confirmation === 'RESET') { localStorage.removeItem('HotelManagerData'); alert("System has been reset to factory defaults. The application will now reload."); location.reload(); } else { alert("Factory reset cancelled."); } }
             function renderSystemView() { const backupDisplay = document.getElementById('last-backup-display'); if (state.lastBackup) { backupDisplay.textContent = new Date(state.lastBackup).toLocaleString(); } else { backupDisplay.textContent = "Never"; } }
             
             // =================================================================
             // AUTHENTICATION & APP RENDER
             // =================================================================
-            function handleLogin(e) { e.preventDefault(); const user = state.users.find(u => u.username === document.getElementById('username').value && u.password === document.getElementById('password').value); if (user) { state.currentUser = user; document.getElementById('login-screen').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('login-error').classList.add('hidden'); renderAppForUser(); } else { document.getElementById('login-error').classList.remove('hidden'); } }
+            function handleLogin(e) { e.preventDefault(); const user = state.staff.find(s => s.username && s.username === document.getElementById('username').value && s.password === document.getElementById('password').value); if (user) { state.currentUser = user; document.getElementById('login-screen').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('login-error').classList.add('hidden'); renderAppForUser(); } else { document.getElementById('login-error').classList.remove('hidden'); } }
             function handleLogout() { state.currentUser = null; if (checkoutAlertInterval) clearInterval(checkoutAlertInterval); transientState.upcomingCheckoutAlertsShown.clear(); transientState.expiredBookingAlertsShown.clear(); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('main-app').classList.add('hidden'); document.getElementById('login-form').reset(); }
             function renderAppForUser() { if (!state.currentUser) return; document.getElementById('user-name-display').textContent = state.currentUser.name; document.getElementById('user-role-display').textContent = state.currentUser.role; renderSidebar(); renderAllViews(); const defaultView = state.currentUser.role === 'Admin' ? 'admin-dashboard-view' : 'front-desk-dashboard-view'; switchView(defaultView); startPeriodicChecks(); }
             function renderSidebar() { const nav = document.getElementById('sidebar-nav'); nav.innerHTML = ''; const navLinks = [ { name: 'Dashboard', view: state.currentUser.role === 'Admin' ? 'admin-dashboard-view' : 'front-desk-dashboard-view', roles: ['Admin', 'Front Desk', 'Manager'] }, { name: 'Rooms', view: 'rooms-view', roles: ['Admin', 'Front Desk', 'Manager'] }, { name: 'Sales & Receipts', view: 'sales-view', roles: ['Admin', 'Front Desk', 'Manager'] }, { name: 'Inventory', view: 'inventory-view', roles: ['Admin', 'Manager'] }, { name: 'Staff', view: 'staff-view', roles: ['Admin'] }, { name: 'Assets', view: 'assets-view', roles: ['Admin'] }, { name: 'Reports', view: 'reports-view', roles: ['Admin', 'Manager'] }, { name: 'Profit & Loss', view: 'pl-view', roles: ['Admin'] }, { name: 'System', view: 'system-view', roles: ['Admin'] }, ]; navLinks.forEach(link => { if (link.roles.includes(state.currentUser.role)) { const li = document.createElement('li'); const a = document.createElement('a'); a.href = '#'; a.textContent = link.name; a.dataset.view = link.view; a.addEventListener('click', (e) => { e.preventDefault(); switchView(e.target.dataset.view); }); li.appendChild(a); nav.appendChild(li); } }); }
@@ -452,170 +452,45 @@
             function renderAllViews() { renderDashboards(); renderRoomGrid(); renderSalesTable(); if (state.currentUser.role === 'Admin' || state.currentUser.role === 'Manager') { renderInventoryTable(); renderStaffTable(); renderAssetTable(); renderReportsView(); renderSystemView(); } }
 
             // =================================================================
-            // VIEW RENDERING FUNCTIONS (WITH ENHANCEMENTS)
+            // VIEW RENDERING FUNCTIONS
             // =================================================================
             function renderDashboards() { const roomsAvailable = state.rooms.filter(r => r.status === 'available').length; const roomsBooked = state.rooms.length - roomsAvailable; document.getElementById('admin-rooms-available').textContent = roomsAvailable; document.getElementById('admin-rooms-booked').textContent = roomsBooked; const todaySales = state.sales.filter(s => new Date(s.date).toDateString() === new Date().toDateString()).reduce((sum, s) => sum + s.total, 0); document.getElementById('admin-today-sales').textContent = `₦${todaySales.toLocaleString()}`; const lowStockCount = state.inventory.filter(i => i.stock <= i.lowStockThreshold).length; document.getElementById('admin-low-stock-count').textContent = lowStockCount; document.getElementById('fd-rooms-available').textContent = roomsAvailable; document.getElementById('fd-rooms-booked').textContent = roomsBooked; const today = new Date().toISOString().split('T')[0]; const expiringTodayCount = state.rooms.filter(r => r.checkOut === today).length; document.getElementById('fd-expiring-today').textContent = expiringTodayCount; }
-            function renderRoomGrid() { const standardGrid = document.getElementById('standard-room-grid'); const deluxeGrid = document.getElementById('deluxe-room-grid'); const suiteGrid = document.getElementById('suite-room-grid'); standardGrid.innerHTML = ''; deluxeGrid.innerHTML = ''; suiteGrid.innerHTML = ''; state.rooms.forEach(room => { const card = document.createElement('div'); card.className = `room-card ${room.status}`; card.dataset.roomId = room.id; card.innerHTML = `<div class="room-name">${room.name}</div><div class="room-price">₦${room.price.toLocaleString()}/night</div>`; card.addEventListener('click', () => handleRoomClick(room.id)); if (room.type === 'Standard') standardGrid.appendChild(card); else if (room.type === 'Deluxe') deluxeGrid.appendChild(card); else if (room.type === 'Suite') suiteGrid.appendChild(card); }); document.getElementById('edit-room-prices-btn').classList.toggle('hidden', state.currentUser.role !== 'Admin'); }
+            function renderRoomGrid() { const standardGrid = document.getElementById('standard-room-grid'); const deluxeGrid = document.getElementById('deluxe-room-grid'); const suiteGrid = document.getElementById('suite-room-grid'); standardGrid.innerHTML = ''; deluxeGrid.innerHTML = ''; suiteGrid.innerHTML = ''; state.rooms.forEach(room => { const card = document.createElement('div'); card.className = `room-card ${room.status}`; card.dataset.roomId = room.id; card.innerHTML = `<div class="room-details"><div class="room-name">${room.name}</div><div class="room-price">₦${room.price.toLocaleString()}/night</div></div><div class="room-actions ${state.currentUser.role === 'Admin' ? '' : 'hidden'}"><button class="action-btn edit-btn">Edit</button><button class="action-btn delete-btn">Del</button></div>`; card.querySelector('.room-details').addEventListener('click', () => handleRoomClick(room.id)); if (state.currentUser.role === 'Admin') { card.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); openRoomModal('edit', room.id); }); card.querySelector('.delete-btn').addEventListener('click', (e) => { e.stopPropagation(); handleDeleteRoom(room.id); }); } const targetGrid = room.type === 'Standard' ? standardGrid : (room.type === 'Deluxe' ? deluxeGrid : suiteGrid); targetGrid.appendChild(card); }); document.getElementById('add-room-btn').classList.toggle('hidden', state.currentUser.role !== 'Admin'); }
             function renderSalesTable() { const tbody = document.getElementById('sales-table-body'); tbody.innerHTML = ''; state.sales.slice().reverse().forEach(sale => { const row = document.createElement('tr'); row.innerHTML = `<td>#${String(sale.id).slice(-6)}</td><td>${sale.customerName}</td><td>${sale.total.toLocaleString()}</td><td>${sale.staffName}</td><td>${new Date(sale.date).toLocaleString()}</td> <td><button class="action-btn print-btn" data-sale-id="${sale.id}">Reprint</button></td>`; row.querySelector('.print-btn').addEventListener('click', (e) => generateAndShowReceipt(e.target.dataset.saleId)); tbody.appendChild(row); }); }
             function renderInventoryTable() { if (!document.getElementById('inventory-table-body')) return; const tbody = document.getElementById('inventory-table-body'); tbody.innerHTML = ''; state.inventory.forEach(item => { const isLow = item.stock <= item.lowStockThreshold; const row = document.createElement('tr'); row.className = isLow ? 'low-stock' : ''; row.innerHTML = `<td>${item.name}</td><td>${item.department}</td><td>${item.stock}</td><td>${item.cost.toLocaleString()}</td><td>${item.price.toLocaleString()}</td><td>${isLow ? 'Low Stock' : 'OK'}</td> <td><div class="action-btn-group"> <button class="action-btn edit-btn" data-id="${item.id}">Edit</button> <button class="action-btn delete-btn" data-id="${item.id}">Delete</button> </div></td>`; row.querySelector('.edit-btn').addEventListener('click', e => openInventoryModal('edit', e.target.dataset.id)); row.querySelector('.delete-btn').addEventListener('click', e => deleteItem('inventory', e.target.dataset.id)); tbody.appendChild(row); }); }
-            function renderStaffTable() { if (!document.getElementById('staff-table-body')) return; const tbody = document.getElementById('staff-table-body'); tbody.innerHTML = ''; state.users.forEach(user => { const row = document.createElement('tr'); row.innerHTML = `<td>${user.name}</td><td>${user.role}</td><td>${user.department}</td><td>${user.salary.toLocaleString()}</td> <td><div class="action-btn-group"> <button class="action-btn edit-btn" data-id="${user.id}">Edit</button> <button class="action-btn delete-btn" data-id="${user.id}">Delete</button> </div></td>`; row.querySelector('.edit-btn').addEventListener('click', e => openStaffModal('edit', e.target.dataset.id)); row.querySelector('.delete-btn').addEventListener('click', e => deleteItem('staff', e.target.dataset.id)); tbody.appendChild(row); }); }
+            function renderStaffTable() { if (!document.getElementById('staff-table-body')) return; const tbody = document.getElementById('staff-table-body'); tbody.innerHTML = ''; state.staff.forEach(user => { const row = document.createElement('tr'); row.innerHTML = `<td>${user.name}</td><td>${user.role}</td><td>${user.department}</td><td>${user.salary.toLocaleString()}</td> <td><div class="action-btn-group"> <button class="action-btn edit-btn" data-id="${user.id}">Edit</button> <button class="action-btn delete-btn" data-id="${user.id}">Delete</button> </div></td>`; row.querySelector('.edit-btn').addEventListener('click', e => openStaffModal('edit', e.target.dataset.id)); row.querySelector('.delete-btn').addEventListener('click', e => deleteItem('staff', e.target.dataset.id)); tbody.appendChild(row); }); }
             function renderAssetTable() { if (!document.getElementById('asset-table-body')) return; const tbody = document.getElementById('asset-table-body'); tbody.innerHTML = ''; state.assets.forEach(asset => { const row = document.createElement('tr'); row.innerHTML = `<td>${asset.name}</td><td>${asset.department}</td><td>${new Date(asset.purchaseDate).toLocaleDateString()}</td><td>${asset.value.toLocaleString()}</td> <td><div class="action-btn-group"> <button class="action-btn edit-btn" data-id="${asset.id}">Edit</button> <button class="action-btn delete-btn" data-id="${asset.id}">Delete</button> </div></td>`; row.querySelector('.edit-btn').addEventListener('click', e => openAssetModal('edit', e.target.dataset.id)); row.querySelector('.delete-btn').addEventListener('click', e => deleteItem('asset', e.target.dataset.id)); tbody.appendChild(row); }); }
-            
-            function renderReportsView(start, end) {
-                if (!document.getElementById('reports-summary-grid')) return;
-                const container = document.getElementById('reports-summary-grid');
-                const trendsBody = document.getElementById('consumption-trends-body');
-                container.innerHTML = '';
-                trendsBody.innerHTML = '';
-
-                let filteredSales = state.sales;
-                if (start && end) {
-                    const startDate = new Date(start);
-                    const endDate = new Date(end);
-                    endDate.setHours(23, 59, 59, 999); // Include the whole end day
-                    filteredSales = state.sales.filter(s => {
-                        const saleDate = new Date(s.date);
-                        return saleDate >= startDate && saleDate <= endDate;
-                    });
-                }
-                
-                const salesByDept = filteredSales.reduce((acc, sale) => {
-                    const dept = sale.type;
-                    if (!acc[dept]) acc[dept] = 0;
-                    acc[dept] += sale.total;
-                    return acc;
-                }, {});
-                for(const dept in salesByDept) { container.innerHTML += `<div class="widget"><h3>${dept} Sales</h3><p class="value">₦${salesByDept[dept].toLocaleString()}</p></div>`; }
-                if(Object.keys(salesByDept).length === 0) container.innerHTML = `<div class="widget"><h3>No Sales Data</h3><p class="value">₦0</p></div>`;
-
-                // NEW: Consumption Trends Logic
-                const consumption = {};
-                filteredSales.forEach(sale => {
-                    sale.items.forEach(item => {
-                        if (item.inventoryId) { // Only track items from inventory
-                            if (!consumption[item.inventoryId]) {
-                                consumption[item.inventoryId] = { name: item.name, department: item.department || 'N/A', count: 0 };
-                            }
-                            consumption[item.inventoryId].count += item.quantity;
-                        }
-                    });
-                });
-                const sortedConsumption = Object.values(consumption).sort((a,b) => b.count - a.count);
-                sortedConsumption.forEach(item => {
-                    trendsBody.innerHTML += `<tr><td>${item.name}</td><td>${item.department}</td><td>${item.count}</td></tr>`;
-                });
-            }
-
-            function calculateProfitAndLoss(startDate, endDate) { const salesInPeriod = state.sales.filter(s => { const saleDate = new Date(s.date); return saleDate >= startDate && saleDate <= endDate; }); const revenue = salesInPeriod.reduce((sum, s) => sum + s.total, 0); let cogs = 0; salesInPeriod.forEach(sale => { if (sale.type !== 'Booking') { sale.items.forEach(item => { cogs += item.costPerItem * item.quantity; }); } }); const totalMonthlySalary = state.users.reduce((sum, u) => sum + u.salary, 0); let salaryExpense = 0; const timeDiff = endDate.getTime() - startDate.getTime(); const daysInPeriod = timeDiff / (1000 * 3600 * 24) + 1; if (daysInPeriod <= 1) { salaryExpense = totalMonthlySalary / 30; } else if (daysInPeriod <= 31) { salaryExpense = totalMonthlySalary; } else { salaryExpense = totalMonthlySalary * 12; } const assetExpense = state.assets.filter(a => { const purchaseDate = new Date(a.purchaseDate); return purchaseDate >= startDate && purchaseDate <= endDate; }).reduce((sum, a) => sum + a.value, 0); const totalExpenses = cogs + salaryExpense + assetExpense; const profit = revenue - totalExpenses; return { revenue, cogs, salaryExpense, assetExpense, profit }; }
+            function renderReportsView(start, end) { if (!document.getElementById('reports-summary-grid')) return; const container = document.getElementById('reports-summary-grid'); const trendsBody = document.getElementById('consumption-trends-body'); container.innerHTML = ''; trendsBody.innerHTML = ''; let filteredSales = state.sales; if (start && end) { const startDate = new Date(start); const endDate = new Date(end); endDate.setHours(23, 59, 59, 999); filteredSales = state.sales.filter(s => { const saleDate = new Date(s.date); return saleDate >= startDate && saleDate <= endDate; }); } const salesByDept = filteredSales.reduce((acc, sale) => { const dept = sale.type; if (!acc[dept]) acc[dept] = 0; acc[dept] += sale.total; return acc; }, {}); for(const dept in salesByDept) { container.innerHTML += `<div class="widget"><h3>${dept} Sales</h3><p class="value">₦${salesByDept[dept].toLocaleString()}</p></div>`; } if(Object.keys(salesByDept).length === 0) container.innerHTML = `<div class="widget"><h3>No Sales Data</h3><p class="value">₦0</p></div>`; const consumption = {}; filteredSales.forEach(sale => { sale.items.forEach(item => { if (item.inventoryId) { if (!consumption[item.inventoryId]) { consumption[item.inventoryId] = { name: item.name, department: item.department || 'N/A', count: 0 }; } consumption[item.inventoryId].count += item.quantity; } }); }); const sortedConsumption = Object.values(consumption).sort((a,b) => b.count - a.count); sortedConsumption.forEach(item => { trendsBody.innerHTML += `<tr><td>${item.name}</td><td>${item.department}</td><td>${item.count}</td></tr>`; }); }
+            function calculateProfitAndLoss(startDate, endDate) { const salesInPeriod = state.sales.filter(s => { const saleDate = new Date(s.date); return saleDate >= startDate && saleDate <= endDate; }); const revenue = salesInPeriod.reduce((sum, s) => sum + s.total, 0); let cogs = 0; salesInPeriod.forEach(sale => { if (sale.type !== 'Booking') { sale.items.forEach(item => { cogs += item.costPerItem * item.quantity; }); } }); const totalMonthlySalary = state.staff.reduce((sum, u) => sum + u.salary, 0); let salaryExpense = 0; const timeDiff = endDate.getTime() - startDate.getTime(); const daysInPeriod = timeDiff / (1000 * 3600 * 24) + 1; if (daysInPeriod <= 1) { salaryExpense = totalMonthlySalary / 30; } else if (daysInPeriod <= 31) { salaryExpense = totalMonthlySalary; } else { salaryExpense = totalMonthlySalary * 12; } const assetExpense = state.assets.filter(a => { const purchaseDate = new Date(a.purchaseDate); return purchaseDate >= startDate && purchaseDate <= endDate; }).reduce((sum, a) => sum + a.value, 0); const totalExpenses = cogs + salaryExpense + assetExpense; const profit = revenue - totalExpenses; return { revenue, cogs, salaryExpense, assetExpense, profit }; }
             function renderProfitLossView(period) { const now = new Date(); let startDate, endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59); switch(period) { case 'daily': startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0); break; case 'yearly': startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0); endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59); break; case 'monthly': default: startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0); endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59); break; } const data = calculateProfitAndLoss(startDate, endDate); const grid = document.getElementById('pl-summary-grid'); grid.innerHTML = ` <div class="widget"><h3 style="color: var(--green);">Total Revenue</h3><p class="value green">₦${data.revenue.toLocaleString()}</p></div> <div class="widget"><h3 style="color: var(--red);">Cost of Goods Sold</h3><p class="value red">₦${data.cogs.toLocaleString()}</p></div> <div class="widget"><h3 style="color: var(--red);">Salary Expenses</h3><p class="value red">₦${Math.round(data.salaryExpense).toLocaleString()}</p></div> <div class="widget"><h3 style="color: var(--red);">Asset Purchases</h3><p class="value red">₦${data.assetExpense.toLocaleString()}</p></div> <div class="widget"> <h3>Net Profit / Loss</h3> <p class="value ${data.profit >= 0 ? 'green' : 'red'}">₦${data.profit.toLocaleString()}</p> </div> `; }
 
             // =================================================================
-            // ACTION HANDLERS & LOGIC (WITH ENHANCEMENTS)
+            // ACTION HANDLERS & LOGIC
             // =================================================================
-            function handleRoomClick(roomId) {
-                const room = state.rooms.find(r => r.id == roomId);
-                if (room.status === 'available') {
-                    openBookingModal(roomId);
-                } else {
-                    const action = confirm(`Room ${room.name} is booked by ${room.guestName}.\nCheck-out Date: ${new Date(room.checkOut).toLocaleDateString()}.\n\nDo you want to check out this guest now?`);
-                    if (action) {
-                        handleEarlyCheckout(roomId);
-                    }
-                }
-            }
-
-            function handleEarlyCheckout(roomId) {
-                const room = state.rooms.find(r => r.id == roomId);
-                if (!room) return;
-                room.status = 'available';
-                room.guestName = null;
-                room.checkIn = null;
-                room.checkOut = null;
-                alert(`Room ${room.name} has been checked out and is now available.`);
-                saveStateAndReRender();
-            }
-            
+            function handleRoomClick(roomId) { const room = state.rooms.find(r => r.id == roomId); if (room.status === 'available') { openBookingModal(roomId); } else { if (confirm(`Room ${room.name} is booked by ${room.guestName}.\nCheck-out Date: ${new Date(room.checkOut).toLocaleDateString()}.\n\nDo you want to check out this guest now?`)) { handleEarlyCheckout(roomId); } } }
+            function handleEarlyCheckout(roomId) { const room = state.rooms.find(r => r.id == roomId); if (!room) return; room.status = 'available'; room.guestName = null; room.checkIn = null; room.checkOut = null; alert(`Room ${room.name} has been checked out and is now available.`); saveStateAndReRender(); }
             function openBookingModal(roomId) { const room = state.rooms.find(r => r.id == roomId); document.getElementById('booking-form').reset(); document.getElementById('booking-room-id').value = roomId; document.getElementById('booking-modal-title').textContent = `Book ${room.name} (${room.type})`; document.getElementById('booking-total-price').textContent = '₦0.00'; const today = new Date().toISOString().split('T')[0]; document.getElementById('check-in-date').min = today; document.getElementById('check-out-date').min = today; openModal('booking-modal'); }
             function calculateBookingPrice() { const roomId = document.getElementById('booking-room-id').value; const room = state.rooms.find(r => r.id == roomId); const checkInDate = new Date(document.getElementById('check-in-date').value); const checkOutDate = new Date(document.getElementById('check-out-date').value); if (room && checkInDate && checkOutDate && checkOutDate > checkInDate) { const days = Math.ceil((checkOutDate - checkInDate) / (1000 * 3600 * 24)); const totalPrice = days * room.price; document.getElementById('booking-total-price').textContent = `₦${totalPrice.toLocaleString()}`; } else { document.getElementById('booking-total-price').textContent = '₦0.00'; } }
-            
-            function handleBookingSubmit(e) {
-                e.preventDefault();
-                const roomId = document.getElementById('booking-room-id').value;
-                const room = state.rooms.find(r => r.id == roomId);
-                const customerName = document.getElementById('customer-name').value;
-                const checkIn = document.getElementById('check-in-date').value;
-                const checkOut = document.getElementById('check-out-date').value;
-                if (!customerName || !checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) {
-                    alert('Please fill all fields correctly. Check-out date must be after check-in date.');
-                    return;
-                }
-                
-                deductWelcomeKitFromInventory(room.type);
-
-                room.status = 'booked';
-                room.guestName = customerName;
-                room.checkIn = checkIn;
-                room.checkOut = checkOut;
-                
-                const days = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 3600 * 24));
-                const total = days * room.price;
-                const sale = {
-                    id: Date.now(),
-                    type: 'Booking',
-                    customerName: customerName,
-                    staffName: state.currentUser.name,
-                    date: new Date().toISOString(),
-                    items: [{ inventoryId: null, name: `${room.name} x ${days} night(s)`, quantity: 1, pricePerItem: total, costPerItem: 0 }],
-                    total: total
-                };
-                state.sales.push(sale);
-                closeModal('booking-modal');
-                generateAndShowReceipt(sale.id);
-                saveStateAndReRender();
-            }
-
-            function deductWelcomeKitFromInventory(roomType) {
-                const itemsToDeduct = [
-                    { name: 'Guest Water Bottle', qty: { 'Standard': 1, 'Deluxe': 2, 'Suite': 2 } },
-                    { name: 'Guest Shampoo', qty: { 'Standard': 1, 'Deluxe': 1, 'Suite': 2 } },
-                    { name: 'Guest Soap', qty: { 'Standard': 1, 'Deluxe': 2, 'Suite': 2 } }
-                ];
-
-                let stockWarning = '';
-                itemsToDeduct.forEach(kitItem => {
-                    const inventoryItem = state.inventory.find(i => i.name === kitItem.name);
-                    const qtyToDeduct = kitItem.qty[roomType] || 1;
-                    if (inventoryItem) {
-                        if(inventoryItem.stock >= qtyToDeduct) {
-                            inventoryItem.stock -= qtyToDeduct;
-                        } else {
-                            stockWarning += `\n- Not enough ${inventoryItem.name}. Required: ${qtyToDeduct}, Available: ${inventoryItem.stock}.`;
-                            inventoryItem.stock = 0; // Deplete stock
-                        }
-                    }
-                });
-                if(stockWarning) {
-                    alert('Warning: Some welcome kit items are out of stock. Booking will proceed.' + stockWarning);
-                }
-            }
-            
+            function handleBookingSubmit(e) { e.preventDefault(); const roomId = document.getElementById('booking-room-id').value; const room = state.rooms.find(r => r.id == roomId); const customerName = document.getElementById('customer-name').value; const checkIn = document.getElementById('check-in-date').value; const checkOut = document.getElementById('check-out-date').value; if (!customerName || !checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) { alert('Please fill all fields correctly. Check-out date must be after check-in date.'); return; } deductWelcomeKitFromInventory(room.type); room.status = 'booked'; room.guestName = customerName; room.checkIn = checkIn; room.checkOut = checkOut; const days = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 3600 * 24)); const total = days * room.price; const sale = { id: Date.now(), type: 'Booking', customerName: customerName, staffName: state.currentUser.name, date: new Date().toISOString(), items: [{ inventoryId: null, name: `${room.name} x ${days} night(s)`, quantity: 1, pricePerItem: total, costPerItem: 0 }], total: total }; state.sales.push(sale); closeModal('booking-modal'); generateAndShowReceipt(sale.id); saveStateAndReRender(); }
+            function deductWelcomeKitFromInventory(roomType) { const itemsToDeduct = [ { name: 'Guest Water Bottle', qty: { 'Standard': 1, 'Deluxe': 2, 'Suite': 2 } }, { name: 'Guest Shampoo', qty: { 'Standard': 1, 'Deluxe': 1, 'Suite': 2 } }, { name: 'Guest Soap', qty: { 'Standard': 1, 'Deluxe': 2, 'Suite': 2 } } ]; let stockWarning = ''; itemsToDeduct.forEach(kitItem => { const inventoryItem = state.inventory.find(i => i.name === kitItem.name); const qtyToDeduct = kitItem.qty[roomType] || 1; if (inventoryItem) { if(inventoryItem.stock >= qtyToDeduct) { inventoryItem.stock -= qtyToDeduct; } else { stockWarning += `\n- Not enough ${inventoryItem.name}. Required: ${qtyToDeduct}, Available: ${inventoryItem.stock}.`; inventoryItem.stock = 0; } } }); if(stockWarning) { alert('Warning: Some welcome kit items are out of stock. Booking will proceed.' + stockWarning); } }
             function openNewSaleModal() { currentSaleItems = []; document.getElementById('new-sale-form').reset(); const select = document.getElementById('sale-item-select'); select.innerHTML = '<option value="">-- Select Item --</option>'; state.inventory.filter(i => i.stock > 0).forEach(item => { select.innerHTML += `<option value="${item.id}">${item.name} (Stock: ${item.stock})</option>`; }); renderSaleCart(); openModal('new-sale-modal'); }
             function handleAddItemToSale() { const itemId = document.getElementById('sale-item-select').value; const quantity = parseInt(document.getElementById('sale-item-quantity').value); if (!itemId || isNaN(quantity) || quantity <= 0) { alert('Please select an item and enter a valid quantity.'); return; } const inventoryItem = state.inventory.find(i => i.id == itemId); const existingCartItem = currentSaleItems.find(i => i.inventoryId == itemId); const currentStock = inventoryItem.stock; const quantityInCart = existingCartItem ? existingCartItem.quantity : 0; if (quantity > (currentStock - quantityInCart)) { alert(`Not enough stock for ${inventoryItem.name}. Available: ${currentStock}, In Cart: ${quantityInCart}. You can add at most ${currentStock - quantityInCart}.`); return; } if(existingCartItem) { existingCartItem.quantity += quantity; } else { currentSaleItems.push({ inventoryId: inventoryItem.id, name: inventoryItem.name, quantity: quantity, pricePerItem: inventoryItem.price, costPerItem: inventoryItem.cost, department: inventoryItem.department }); } renderSaleCart(); }
             function renderSaleCart() { const cartBody = document.getElementById('sale-items-list'); cartBody.innerHTML = ''; let total = 0; currentSaleItems.forEach((item, index) => { const subtotal = item.quantity * item.pricePerItem; total += subtotal; const row = document.createElement('tr'); row.innerHTML = `<td>${item.name}</td><td>${item.quantity}</td><td>${subtotal.toLocaleString()}</td><td><button type="button" class="action-btn delete-btn" data-index="${index}">X</button></td>`; row.querySelector('.delete-btn').addEventListener('click', (e) => { currentSaleItems.splice(e.target.dataset.index, 1); renderSaleCart(); }); cartBody.appendChild(row); }); document.getElementById('sale-total-amount').textContent = `₦${total.toLocaleString()}`; }
             function handleNewSaleSubmit(e) { e.preventDefault(); if (currentSaleItems.length === 0) { alert('Please add at least one item to the sale.'); return; } currentSaleItems.forEach(cartItem => { const inventoryItem = state.inventory.find(i => i.id === cartItem.inventoryId); inventoryItem.stock -= cartItem.quantity; }); const total = currentSaleItems.reduce((sum, item) => sum + (item.quantity * item.pricePerItem), 0); const mainDepartment = currentSaleItems.length > 0 ? currentSaleItems[0].department : 'General'; const sale = { id: Date.now(), type: mainDepartment, customerName: document.getElementById('sale-customer-name').value || 'Walk-in', staffName: state.currentUser.name, date: new Date().toISOString(), items: [...currentSaleItems], total: total, }; state.sales.push(sale); closeModal('new-sale-modal'); generateAndShowReceipt(sale.id); saveStateAndReRender(); }
-            function generateAndShowReceipt(saleId) { const sale = state.sales.find(s => s.id == saleId); if (!sale) return; const receiptContent = document.getElementById('receipt-content'); let itemsHtml = ''; sale.items.forEach(item => { const subtotal = item.quantity * item.pricePerItem; itemsHtml += `<tr><td>${item.name} (x${item.quantity})</td><td style="text-align: right;">₦${subtotal.toLocaleString()}</td></tr>`; }); receiptContent.innerHTML = `<div id="receipt-header" style="text-align:center; margin-bottom: 20px;"><h3>Hotel Manager</h3><p>Official Receipt</p></div><div id="receipt-details" style="margin-bottom: 20px;"><p><strong>Receipt ID:</strong> #${String(sale.id).slice(-6)}</p><p><strong>Date:</strong> ${new Date(sale.date).toLocaleString()}</p><p><strong>Customer:</strong> ${sale.customerName}</p><p><strong>Served by:</strong> ${sale.staffName}</p></div><div id="receipt-items"><table style="width:100%; border-collapse: collapse;"><thead><tr><th style="text-align:left;">Description</th><th style="text-align: right;">Amount</th></tr><tr><td colspan="2" style="border-bottom: 1px dashed #333; padding-top: 5px;"></td></tr></thead><tbody style="padding-top:10px;">${itemsHtml}</tbody></table></div><div id="receipt-total" style="text-align:right; margin-top:20px; font-weight:bold; font-size: 1.2em;"><p>TOTAL: ₦${sale.total.toLocaleString()}</p></div><div id="receipt-footer" style="text-align:center; margin-top:30px;"><p>Thank you for your patronage!</p></div>`; openModal('receipt-modal'); }
+            function generateAndShowReceipt(saleId) { const sale = state.sales.find(s => s.id == saleId); if (!sale) return; const receiptContent = document.getElementById('receipt-content'); let itemsHtml = ''; sale.items.forEach(item => { const subtotal = item.quantity * item.pricePerItem; itemsHtml += `<tr><td>${item.name} (x${item.quantity})</td><td style="text-align: right;">₦${subtotal.toLocaleString()}</td></tr>`; }); receiptContent.innerHTML = `<div id="receipt-header" style="text-align:center; margin-bottom: 20px;"><h3>HOTEL MANAGER</h3><p>Official Receipt</p></div><div id="receipt-details" style="margin-bottom: 20px;"><p><strong>Receipt ID:</strong> #${String(sale.id).slice(-6)}</p><p><strong>Date:</strong> ${new Date(sale.date).toLocaleString()}</p><p><strong>Customer:</strong> ${sale.customerName}</p><p><strong>Served by:</strong> ${sale.staffName}</p></div><div id="receipt-items"><table style="width:100%; border-collapse: collapse;"><thead><tr><th style="text-align:left;">Description</th><th style="text-align: right;">Amount</th></tr><tr><td colspan="2" style="border-bottom: 1px dashed #333; padding-top: 5px;"></td></tr></thead><tbody style="padding-top:10px;">${itemsHtml}</tbody></table></div><div id="receipt-total" style="text-align:right; margin-top:20px; font-weight:bold; font-size: 1.2em;"><p>TOTAL: ₦${sale.total.toLocaleString()}</p></div><div id="receipt-footer" style="text-align:center; margin-top:30px;"><p>Thank you for your patronage!</p></div>`; openModal('receipt-modal'); }
             function openChangePasswordModal() { document.getElementById('change-password-form').reset(); openModal('change-password-modal'); }
-            function handleChangePasswordSubmit(e) { e.preventDefault(); const currentPassword = document.getElementById('current-password').value; const newPassword = document.getElementById('new-password').value; const confirmNewPassword = document.getElementById('confirm-new-password').value; if (newPassword !== confirmNewPassword) { alert('New passwords do not match.'); return; } if (state.currentUser.password !== currentPassword) { alert('Current password is incorrect.'); return; } const userInState = state.users.find(u => u.id === state.currentUser.id); userInState.password = newPassword; state.currentUser.password = newPassword; alert('Password changed successfully!'); closeModal('change-password-modal'); saveStateAndReRender(); }
-            function openEditRoomPricesModal() { const standardPrice = state.rooms.find(r => r.type === 'Standard')?.price || 0; const deluxePrice = state.rooms.find(r => r.type === 'Deluxe')?.price || 0; const suitePrice = state.rooms.find(r => r.type === 'Suite')?.price || 0; document.getElementById('price-standard').value = standardPrice; document.getElementById('price-deluxe').value = deluxePrice; document.getElementById('price-suite').value = suitePrice; openModal('edit-room-prices-modal'); }
-            function handleEditRoomPricesSubmit(e) { e.preventDefault(); const newStandardPrice = parseFloat(document.getElementById('price-standard').value); const newDeluxePrice = parseFloat(document.getElementById('price-deluxe').value); const newSuitePrice = parseFloat(document.getElementById('price-suite').value); state.rooms.forEach(room => { if (room.type === 'Standard') room.price = newStandardPrice; else if (room.type === 'Deluxe') room.price = newDeluxePrice; else if (room.type === 'Suite') room.price = newSuitePrice; }); alert('Room prices updated successfully!'); closeModal('edit-room-prices-modal'); saveStateAndReRender(); }
+            function handleChangePasswordSubmit(e) { e.preventDefault(); const currentPassword = document.getElementById('current-password').value; const newPassword = document.getElementById('new-password').value; const confirmNewPassword = document.getElementById('confirm-new-password').value; if (newPassword !== confirmNewPassword) { alert('New passwords do not match.'); return; } if (state.currentUser.password !== currentPassword) { alert('Current password is incorrect.'); return; } const userInState = state.staff.find(s => s.id === state.currentUser.id); userInState.password = newPassword; state.currentUser.password = newPassword; alert('Password changed successfully!'); closeModal('change-password-modal'); saveStateAndReRender(); }
             function openInventoryModal(mode, id = null) { const form = document.getElementById('inventory-form'); form.reset(); document.getElementById('inventory-modal-title').textContent = mode === 'add' ? 'Add New Item' : 'Edit Item'; if (mode === 'edit') { const item = state.inventory.find(i => i.id == id); document.getElementById('inventory-item-id').value = item.id; document.getElementById('inventory-item-name').value = item.name; document.getElementById('inventory-department').value = item.department; document.getElementById('inventory-stock').value = item.stock; document.getElementById('inventory-item-cost').value = item.cost; document.getElementById('inventory-item-price').value = item.price; document.getElementById('inventory-low-stock').value = item.lowStockThreshold; } else { document.getElementById('inventory-item-id').value = ''; } openModal('inventory-modal'); }
             function handleInventoryFormSubmit(e) { e.preventDefault(); const id = document.getElementById('inventory-item-id').value; const newItemData = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('inventory-item-name').value, department: document.getElementById('inventory-department').value, stock: parseInt(document.getElementById('inventory-stock').value), cost: parseFloat(document.getElementById('inventory-item-cost').value), price: parseFloat(document.getElementById('inventory-item-price').value), lowStockThreshold: parseInt(document.getElementById('inventory-low-stock').value), }; if (id) { const index = state.inventory.findIndex(i => i.id == id); state.inventory[index] = newItemData; } else { state.inventory.push(newItemData); } closeModal('inventory-modal'); saveStateAndReRender(); }
-            function openStaffModal(mode, id = null) { const form = document.getElementById('staff-form'); form.reset(); document.getElementById('staff-modal-title').textContent = mode === 'add' ? 'Add New Staff' : 'Edit Staff'; document.getElementById('staff-password').required = (mode === 'add'); if (mode === 'edit') { const user = state.users.find(u => u.id == id); document.getElementById('staff-id').value = user.id; document.getElementById('staff-name').value = user.name; document.getElementById('staff-username').value = user.username; document.getElementById('staff-role').value = user.role; document.getElementById('staff-department').value = user.department; document.getElementById('staff-salary').value = user.salary; } else { document.getElementById('staff-id').value = ''; } openModal('staff-modal'); }
-            function handleStaffFormSubmit(e) { e.preventDefault(); const id = document.getElementById('staff-id').value; const password = document.getElementById('staff-password').value; if(id) { const index = state.users.findIndex(u => u.id == id); state.users[index].name = document.getElementById('staff-name').value; state.users[index].username = document.getElementById('staff-username').value; state.users[index].role = document.getElementById('staff-role').value; state.users[index].department = document.getElementById('staff-department').value; state.users[index].salary = parseInt(document.getElementById('staff-salary').value); if (password) state.users[index].password = password; } else { const newUser = { id: Date.now(), name: document.getElementById('staff-name').value, username: document.getElementById('staff-username').value, password: password, role: document.getElementById('staff-role').value, department: document.getElementById('staff-department').value, salary: parseInt(document.getElementById('staff-salary').value), }; state.users.push(newUser); } closeModal('staff-modal'); saveStateAndReRender(); }
+            function openStaffModal(mode, id = null) { const form = document.getElementById('staff-form'); form.reset(); document.getElementById('staff-modal-title').textContent = mode === 'add' ? 'Add New Staff' : 'Edit Staff'; if (mode === 'edit') { const user = state.staff.find(u => u.id == id); document.getElementById('staff-id').value = user.id; document.getElementById('staff-name').value = user.name; document.getElementById('staff-username').value = user.username || ''; document.getElementById('staff-role').value = user.role; document.getElementById('staff-department').value = user.department; document.getElementById('staff-salary').value = user.salary; } else { document.getElementById('staff-id').value = ''; } openModal('staff-modal'); }
+            function handleStaffFormSubmit(e) { e.preventDefault(); const id = document.getElementById('staff-id').value; const username = document.getElementById('staff-username').value.trim(); const password = document.getElementById('staff-password').value; if (!id && username && !password) { alert('A password is required for new staff with login access.'); return; } const isDuplicate = state.staff.some(s => s.username && s.username === username && s.id != id); if (username && isDuplicate) { alert('This username is already taken. Please choose another one.'); return; } if (id) { const index = state.staff.findIndex(u => u.id == id); state.staff[index].name = document.getElementById('staff-name').value; state.staff[index].username = username; state.staff[index].role = document.getElementById('staff-role').value; state.staff[index].department = document.getElementById('staff-department').value; state.staff[index].salary = parseInt(document.getElementById('staff-salary').value); if (password) state.staff[index].password = password; } else { const newUser = { id: Date.now(), name: document.getElementById('staff-name').value, username: username, password: password, role: document.getElementById('staff-role').value, department: document.getElementById('staff-department').value, salary: parseInt(document.getElementById('staff-salary').value), }; state.staff.push(newUser); } closeModal('staff-modal'); saveStateAndReRender(); }
             function openAssetModal(mode, id = null) { const form = document.getElementById('asset-form'); form.reset(); document.getElementById('asset-modal-title').textContent = mode === 'add' ? 'Add New Asset' : 'Edit Asset'; if (mode === 'edit') { const asset = state.assets.find(a => a.id == id); document.getElementById('asset-id').value = asset.id; document.getElementById('asset-name').value = asset.name; document.getElementById('asset-department').value = asset.department; document.getElementById('asset-purchase-date').value = asset.purchaseDate; document.getElementById('asset-value').value = asset.value; } else { document.getElementById('asset-id').value = ''; } openModal('asset-modal'); }
             function handleAssetFormSubmit(e) { e.preventDefault(); const id = document.getElementById('asset-id').value; const newAsset = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('asset-name').value, department: document.getElementById('asset-department').value, purchaseDate: document.getElementById('asset-purchase-date').value, value: parseInt(document.getElementById('asset-value').value), }; if (id) { const index = state.assets.findIndex(a => a.id == id); state.assets[index] = newAsset; } else { state.assets.push(newAsset); } closeModal('asset-modal'); saveStateAndReRender(); }
-            function deleteItem(type, id) { if (!confirm(`Are you sure you want to delete this ${type}? This action cannot be undone.`)) return; if (type === 'inventory') { state.inventory = state.inventory.filter(i => i.id != id); } else if (type === 'staff') { if (id == state.currentUser.id) { alert("You cannot delete your own account."); return; } state.users = state.users.filter(u => u.id != id); } else if (type === 'asset') { state.assets = state.assets.filter(a => a.id != id); } saveStateAndReRender(); }
-            function exportSalesToCSV() { let csvContent = "data:text/csv;charset=utf-8,Receipt ID,Type,Customer,Staff,Date,Total (NGN)\n"; state.sales.forEach(sale => { const row = [sale.id, sale.type, `"${sale.customerName}"`, `"${sale.staffName}"`, new Date(sale.date).toISOString(), sale.total]; csvContent += row.join(",") + "\n"; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", "binez_hotels_sales_report.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+            function openRoomModal(mode, id = null) { const form = document.getElementById('room-form'); form.reset(); document.getElementById('room-modal-title').textContent = mode === 'add' ? 'Add New Room' : 'Edit Room'; if (mode === 'edit') { const room = state.rooms.find(r => r.id == id); document.getElementById('room-id').value = room.id; document.getElementById('room-name-input').value = room.name; document.getElementById('room-type-select').value = room.type; document.getElementById('room-price-input').value = room.price; } else { document.getElementById('room-id').value = ''; } openModal('room-modal'); }
+            function handleRoomFormSubmit(e) { e.preventDefault(); const id = document.getElementById('room-id').value; const newRoom = { id: id ? parseInt(id) : Date.now(), name: document.getElementById('room-name-input').value, type: document.getElementById('room-type-select').value, price: parseFloat(document.getElementById('room-price-input').value), status: 'available', guestName: null, checkIn: null, checkOut: null }; if (id) { const index = state.rooms.findIndex(r => r.id == id); const existingRoom = state.rooms[index]; newRoom.status = existingRoom.status; newRoom.guestName = existingRoom.guestName; newRoom.checkIn = existingRoom.checkIn; newRoom.checkOut = existingRoom.checkOut; state.rooms[index] = newRoom; } else { state.rooms.push(newRoom); } closeModal('room-modal'); saveStateAndReRender(); }
+            function handleDeleteRoom(roomId) { const room = state.rooms.find(r => r.id == roomId); if (room.status === 'booked') { alert('Cannot delete a room that is currently booked.'); return; } if (confirm(`Are you sure you want to delete ${room.name}? This action cannot be undone.`)) { state.rooms = state.rooms.filter(r => r.id != roomId); saveStateAndReRender(); } }
+            function deleteItem(itemType, id) { if (!confirm(`Are you sure you want to delete this ${itemType}? This action cannot be undone.`)) return; if (itemType === 'inventory') { state.inventory = state.inventory.filter(i => i.id != id); } else if (itemType === 'staff') { if (id == state.currentUser.id) { alert("You cannot delete your own account."); return; } state.staff = state.staff.filter(u => u.id != id); } else if (itemType === 'asset') { state.assets = state.assets.filter(a => a.id != id); } saveStateAndReRender(); }
+            function exportSalesToCSV() { let csvContent = "data:text/csv;charset=utf-8,Receipt ID,Type,Customer,Staff,Date,Total (NGN)\n"; state.sales.forEach(sale => { const row = [sale.id, sale.type, `"${sale.customerName}"`, `"${sale.staffName}"`, new Date(sale.date).toISOString(), sale.total]; csvContent += row.join(",") + "\n"; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", "hotel_manager_sales_report.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
             function openModal(modalId) { document.getElementById(modalId)?.classList.remove('hidden'); }
             function closeModal(modalId) { document.getElementById(modalId)?.classList.add('hidden'); }
 
@@ -623,7 +498,9 @@
         });
     </script>
 </body>
-
 </html>
+
+
+
 
 
